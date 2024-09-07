@@ -14,6 +14,7 @@ import 'react-circular-progressbar/dist/styles.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlay, faArrowLeft, faArrowRight, faDumbbell } from '@fortawesome/free-solid-svg-icons';
 //import { faUser, faCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import {
   faFacebook, faTwitter, faInstagram
 } from '@fortawesome/free-brands-svg-icons';
@@ -206,6 +207,7 @@ function App() {
           </a>
         </div>
       </footer>
+      <SpeedInsights />
     </div>
   );
 }
