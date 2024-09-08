@@ -8,65 +8,83 @@
  */
 
 import { useEffect, useState } from "react";
-import { fetchImageUrls } from './utils/firebaseConfig';
+import { fetchExercises, fetchImageUrls } from './utils/firebaseConfig';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay, faArrowLeft, faArrowRight, faDumbbell } from '@fortawesome/free-solid-svg-icons';
-//import { faUser, faCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
-import { SpeedInsights } from "@vercel/speed-insights/react"
-import {
-  faFacebook, faTwitter, faInstagram
-} from '@fortawesome/free-brands-svg-icons';
+import { SpeedInsights } from "@vercel/speed-insights/react";
+import { faFacebook, faTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
+
+// Definindo a interface para os dados do exercício
+interface Exercise {
+  id: string;
+  Nome: string;
+  imagem: string;
+}
 
 function App() {
   const [seconds, setSeconds] = useState(24);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  //const [showDropdown, setShowDropdown] = useState(false);
-  // Carregar imagens do Firebase no início
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Função para carregar exercícios e imagens
   useEffect(() => {
-    const loadImages = async () => {
-      const urls = await fetchImageUrls(); // Busca as URLs das imagens do Firebase
-      setImageUrls(urls); // Atualiza o estado com as URLs carregadas
+    const loadExercisesAndImages = async () => {
+      try {
+        const exerciseData = await fetchExercises();
+        setExercises(exerciseData);
+
+        // Verifica se os exercícios foram carregados antes de buscar as URLs das imagens
+        if (exerciseData.length > 0) {
+          const urls = await fetchImageUrls(exerciseData);
+          setImageUrls(urls);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar exercícios e imagens:", error);
+      }
     };
-    loadImages(); // Carrega as imagens ao montar o componente
+    loadExercisesAndImages();
   }, []);
 
-  // Timer para contagem regressiva e troca de imagem
+  // Função para gerenciar o temporizador
   useEffect(() => {
     if (seconds > 0) {
-      const timer = setInterval(() => {
-        setSeconds((prev) => prev - 1);
-      }, 1000);
+      const timer = setInterval(() => setSeconds(prev => prev - 1), 1000);
       return () => clearInterval(timer);
     } else {
-      // Reinicia o timer e atualiza o índice da imagem
+      // Reinicia o temporizador e avança para o próximo exercício
       setSeconds(24);
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageUrls.length); // Passa para a próxima imagem no array
+      setCurrentExerciseIndex(prevIndex => (prevIndex + 1) % exercises.length);
+      setCurrentImageIndex(prevIndex => (prevIndex + 1) % imageUrls.length); // Avança a imagem também
     }
-  }, [seconds, imageUrls.length]);
+  }, [seconds, exercises.length, imageUrls.length]);
 
-  // Funcao para o botão "Reset"
+  // Botoes
+  // Funções para controlar a navegação entre exercícios
   const handleReset = () => {
-    setSeconds(24); // Reinicia o timer
-    setCurrentImageIndex(0); // Volta para a primeira imagem
+    setSeconds(24);
+    setCurrentExerciseIndex(0);
+    setCurrentImageIndex(0);
   };
-
-  // Função para o botão "Next"
   const handleNext = () => {
-    setSeconds(24); // Reinicia o timer
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageUrls.length); // Vai para a próxima imagem
+    setSeconds(24);
+    setCurrentExerciseIndex(prevIndex => (prevIndex + 1) % exercises.length);
+    setCurrentImageIndex(prevIndex => (prevIndex + 1) % imageUrls.length);
+  };
+  const handleBack = () => {
+    setSeconds(24);
+    setCurrentExerciseIndex(prevIndex =>
+      prevIndex === 0 ? exercises.length - 1 : prevIndex - 1
+    );
+    setCurrentImageIndex(prevIndex =>
+      prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1
+    );
   };
 
-  // Função para o botão "Back"
-  const handleBack = () => {
-    setSeconds(24); // Reinicia o timer
-    setCurrentImageIndex((prevIndex) => {
-      // Se estiver na primeira imagem, volta para a última, senão vai para a anterior
-      return prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1;
-    });
-  };
+  const currentExercise = exercises[currentExerciseIndex] || { Nome: "" };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex flex-col items-center justify-between">
@@ -110,7 +128,9 @@ function App() {
         <div className="w-full bg-white shadow-lg rounded-lg p-6 mb-2">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h2 className="text-3xl font-bold text-purple-800 mb-2">Exercise name</h2>
+              <h2 className="text-3xl font-bold text-purple-800 mb-2">
+                {currentExercise.Nome || "Loading..."}
+              </h2>
               <p className="text-purple-600 flex items-center mb-2">
                 <FontAwesomeIcon icon={faDumbbell} className="mr-2" />
                 Exercise Benefit
@@ -120,38 +140,53 @@ function App() {
               </a>
             </div>
             <div className="w-32 h-32 bg-gray-200 rounded-lg relative overflow-hidden group">
-              <img
-                src="https://via.placeholder.com/128"
-                alt="Video Example"
-                className="object-cover w-full h-full"
-              />
+              {imageUrls.length > 0 && (
+                <img
+                  src={imageUrls[currentImageIndex]}
+                  alt={`exercise-${currentImageIndex}`}
+                  className="object-cover w-full h-full"
+                />
+              )}
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <FontAwesomeIcon icon={faPlay} className="text-white text-4xl" />
               </div>
             </div>
           </div>
-
-          <div className="flex justify-center space-x-8 mb-2">
-            {['Hours', 'Minutes', 'Seconds'].map((unit, index) => (
-              <div key={unit} className="text-center">
-                <div style={{ width: 80, height: 80 }}>
-                  <CircularProgressbar
-                    value={index === 2 ? (seconds / 24) * 100 : 0}
-                    text={index === 2 ? seconds.toString().padStart(2, '0') : '00'}
-                    styles={buildStyles({
-                      textSize: '24px',
-                      pathColor: `rgba(129, 140, 248, ${index === 2 ? 1 : 0.2})`,
-                      textColor: '#4A5568',
-                      trailColor: '#d6d6d6',
-                    })}
-                  />
-                </div>
-                <p className="text-gray-500 mt-2">{unit}</p>
+          {/* Temporizador */}
+          <div className="flex justify-center mb-2">
+            <div className="text-center">
+              <div style={{ width: 100, height: 100 }}>
+                <CircularProgressbar
+                  value={(seconds / 24) * 100} // Porcentagem de segundos restante
+                  text={seconds.toString().padStart(2, "0")} // Mostra os segundos
+                  styles={buildStyles({
+                    textSize: "32px",
+                    pathColor: `rgba(129, 140, 248, 1)`, // Cor do progresso
+                    textColor: "#4A5568", // Cor do texto
+                    trailColor: "#d6d6d6", // Cor do fundo do círculo
+                  })}
+                />
               </div>
-            ))}
+              <p className="text-gray-500 mt-2">Seconds</p>
+            </div>
           </div>
-
-          <div className="w-full mb-3 relative">
+          {/* botoes */}
+          <div className="flex justify-between">
+            <button
+              onClick={handleBack}
+              className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center"
+            >
+              <FontAwesomeIcon icon={faArrowLeft} className="mr-2" /> Back
+            </button>
+            <button
+              onClick={handleNext}
+              className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center"
+            >
+              Next <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
+            </button>
+          </div>
+          {/* Carousel */}
+          <div className="w-full relative">
             {imageUrls.length > 0 && (
               <img
                 src={imageUrls[currentImageIndex]}
@@ -170,20 +205,6 @@ function App() {
             </div>
           </div>
 
-          <div className="flex justify-between">
-            <button
-              onClick={handleBack}
-              className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center"
-            >
-              <FontAwesomeIcon icon={faArrowLeft} className="mr-2" /> Back
-            </button>
-            <button
-              onClick={handleNext}
-              className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center"
-            >
-              Next <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
-            </button>
-          </div>
         </div>
       </main>
 
@@ -193,7 +214,7 @@ function App() {
           <a href="#" className="text-gray-600 hover:text-purple-600 transition-colors">Terms of Service</a>
         </div>
         <p className="text-gray-400">
-          Copyright &copy; 2024 FitApp Co.
+          Copyright © 2024 FitApp Co.
         </p>
         <div className="flex justify-center space-x-4 mt-2">
           <a href="#" className="text-gray-400 hover:text-purple-600 transition-colors">
@@ -212,4 +233,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
