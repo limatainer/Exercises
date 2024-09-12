@@ -1,4 +1,4 @@
-# This is a Exercise Web App
+# This is a Exercise Web App - Under Development
 
 Build to facilitate the management of exercise routines and progress tracking.
 
@@ -10,7 +10,8 @@ Build to facilitate the management of exercise routines and progress tracking.
 
 ## Project Structure
 
-All components and their purposes are defined in app.tsx. No need to complicate a project by adding a lot of files.
+All components and their purposes are defined in app.tsx.
+No need to complicate a project by adding a lot of files.
 
 ## Contributing
 
