@@ -15,6 +15,7 @@ interface Exercise {
   id: string;
   Nome: string;
   imagem: string; // Este é o caminho relativo à pasta 'images'
+  youtube: string;
 }
 
 const firebaseConfig = {
@@ -55,7 +56,6 @@ export const fetchExercises = async (): Promise<Exercise[]> => {
   }
 };
 
-// Função para buscar URLs de imagens do Firebase Storage
 // Função para buscar URLs de imagens do Firebase Storage
 export const fetchImageUrls = async (exercises: Exercise[]): Promise<string[]> => {
   try {

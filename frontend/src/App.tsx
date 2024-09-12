@@ -21,8 +21,14 @@ interface Exercise {
   id: string;
   Nome: string;
   imagem: string;
+  youtube: string;
 }
-
+const getYouTubeVideoId = (url: string) => {
+  // eslint-disable-next-line no-useless-escape
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
 function App() {
   const [seconds, setSeconds] = useState(24);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -84,10 +90,13 @@ function App() {
     );
   };
 
-  const currentExercise = exercises[currentExerciseIndex] || { Nome: "" };
-
+  const currentExercise = exercises[currentExerciseIndex] || { Nome: "" } || { youtube: "" };
+  const youtubeVideoId = getYouTubeVideoId(currentExercise?.youtube || '');
+  const thumbnailUrl = youtubeVideoId
+    ? `https://img.youtube.com/vi/${youtubeVideoId}/0.jpg`
+    : null;
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex flex-col items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex flex-col items-center justify-center p-4">
       <header className="w-full flex justify-between items-center p-4 mb-4 bg-white shadow-md">
         <div className="flex items-center space-x-2">
           <FontAwesomeIcon icon={faDumbbell} className="text-purple-600" />
@@ -124,87 +133,86 @@ function App() {
         </div>
       </header>
 
-      <main className="flex flex-col items-center w-full max-w-4xl px-4">
-        <div className="w-full bg-white shadow-lg rounded-lg p-6 mb-2">
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h2 className="text-3xl font-bold text-purple-800 mb-2">
-                {currentExercise.Nome || "Loading..."}
-              </h2>
-              <p className="text-purple-600 flex items-center mb-2">
-                <FontAwesomeIcon icon={faDumbbell} className="mr-2" />
-                Exercise Benefit
-              </p>
-              <a href="#" className="text-green-500 underline hover:text-purple-700 transition-colors">
+      <main className="w-full max-w-4xl bg-white shadow-xl rounded-2xl overflow-hidden">
+        <div className="p-6 space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <h2 className="text-4xl font-bold text-purple-800 mb-2 md:mb-0">
+              {currentExercise?.Nome || "Loading..."}
+            </h2>
+            <div className="flex flex-col items-end">
+              <a href={currentExercise?.youtube || "#"} target="_blank" rel="noreferrer"
+                className="text-green-500 hover:text-green-600 transition-colors text-sm font-medium">
                 Watch a video example
+
+                <div className="w-24 h-24 bg-gray-200 rounded-lg mt-2 relative overflow-hidden group">
+                  {thumbnailUrl && (
+                    <img
+                      src={thumbnailUrl}
+                      alt={`YouTube thumbnail for ${currentExercise?.Nome}`}
+                      className="object-cover w-full h-full"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <FontAwesomeIcon icon={faPlay} className="text-white text-3xl" />
+                  </div>
+                </div>
               </a>
             </div>
-            <div className="w-32 h-32 bg-gray-200 rounded-lg relative overflow-hidden group">
-              {imageUrls.length > 0 && (
-                <img
-                  src={imageUrls[currentImageIndex]}
-                  alt={`exercise-${currentImageIndex}`}
-                  className="object-cover w-full h-full"
-                />
-              )}
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <FontAwesomeIcon icon={faPlay} className="text-white text-4xl" />
-              </div>
-            </div>
           </div>
-          {/* Temporizador */}
-          <div className="flex justify-center mb-2">
-            <div className="text-center">
-              <div style={{ width: 100, height: 100 }}>
-                <CircularProgressbar
-                  value={(seconds / 24) * 100} // Porcentagem de segundos restante
-                  text={seconds.toString().padStart(2, "0")} // Mostra os segundos
-                  styles={buildStyles({
-                    textSize: "32px",
-                    pathColor: `rgba(129, 140, 248, 1)`, // Cor do progresso
-                    textColor: "#4A5568", // Cor do texto
-                    trailColor: "#d6d6d6", // Cor do fundo do círculo
-                  })}
-                />
-              </div>
-              <p className="text-gray-500 mt-2">Seconds</p>
-            </div>
-          </div>
-          {/* botoes */}
-          <div className="flex justify-between">
+
+          <div className="flex justify-center items-center space-x-8">
             <button
               onClick={handleBack}
-              className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center"
+              className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors flex items-center text-lg"
             >
               <FontAwesomeIcon icon={faArrowLeft} className="mr-2" /> Back
             </button>
+            <div className="text-center">
+              <div style={{ width: 120, height: 120 }}>
+                <CircularProgressbar
+                  value={(seconds / 24) * 100}
+                  text={seconds.toString().padStart(2, "0")}
+                  styles={buildStyles({
+                    textSize: "36px",
+                    pathColor: `rgba(129, 140, 248, 1)`,
+                    textColor: "#4A5568",
+                    trailColor: "#e2e8f0",
+                  })}
+                />
+              </div>
+              <p className="text-gray-600 mt-2 font-medium">Seconds</p>
+            </div>
             <button
               onClick={handleNext}
-              className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center"
+              className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors flex items-center text-lg"
             >
               Next <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
             </button>
           </div>
-          {/* Carousel */}
-          <div className="w-full relative">
+
+          <div className="relative">
             {imageUrls.length > 0 && (
               <img
                 src={imageUrls[currentImageIndex]}
                 alt={`exercise-${currentImageIndex}`}
-                className="w-full h-64 md:h-80 lg:h-96 object-cover rounded-lg shadow-lg"
+                className="w-full h-80 object-cover rounded-xl shadow-lg"
               />
             )}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
               {imageUrls.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-2 h-2 rounded-full ${index === currentImageIndex ? 'bg-purple-600' : 'bg-gray-300'
+                  className={`w-3 h-3 rounded-full transition-all ${index === currentImageIndex ? 'bg-purple-600 scale-125' : 'bg-gray-300'
                     }`}
                 />
               ))}
             </div>
           </div>
 
+          <div className="bg-purple-100 rounded-lg p-4 flex items-center">
+            <FontAwesomeIcon icon={faDumbbell} className="text-purple-600 text-xl mr-3" />
+            <p className="text-purple-800 font-medium">Exercise Benefit: Improves cervical spine stability and posture</p>
+          </div>
         </div>
       </main>
 
